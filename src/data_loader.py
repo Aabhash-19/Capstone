@@ -38,4 +38,6 @@ def load_parkinson_data(csv_path: str):
     return X, y, df
 
 if __name__ == "__main__":
-    X, y, df = load_parkinson_data('/Users/irray/Desktop/Projects/Capstone /pd_speech_features.csv')
+    import os
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    X, y, df = load_parkinson_data(os.path.join(base_dir, 'pd_speech_features.csv'))

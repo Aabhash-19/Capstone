@@ -4,8 +4,9 @@ import numpy as np
 import pandas as pd
 from src.model import load_trained_pipeline
 
-MODEL_SAVE_PATH = '/Users/irray/Desktop/Projects/Capstone /parkinsons_adaboost_model.joblib'
-DATASET_PATH = '/Users/irray/Desktop/Projects/Capstone /pd_speech_features.csv'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_SAVE_PATH = os.path.join(BASE_DIR, 'parkinsons_adaboost_model.joblib')
+DATASET_PATH = os.path.join(BASE_DIR, 'pd_speech_features.csv')
 
 def predict_sample(sample_df: pd.DataFrame, model_path: str = MODEL_SAVE_PATH):
     """

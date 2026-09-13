@@ -15,8 +15,9 @@ from sklearn.ensemble import AdaBoostClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
 
-DATASET_PATH = '/Users/irray/Desktop/Projects/Capstone /pd_speech_features.csv'
-MODEL_SAVE_PATH = '/Users/irray/Desktop/Projects/Capstone /parkinsons_adaboost_model.joblib'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATASET_PATH = os.path.join(BASE_DIR, 'pd_speech_features.csv')
+MODEL_SAVE_PATH = os.path.join(BASE_DIR, 'parkinsons_adaboost_model.joblib')
 
 def run_hyperparameter_experiments(X, y):
     """
@@ -115,7 +116,7 @@ def main():
     print_paper_comparison_table(metrics)
     
     # 6. Plot & Save Visualization Artifacts
-    output_dir = "/Users/irray/Desktop/Projects/Capstone "
+    output_dir = BASE_DIR
     plot_roc_curve(y_test, y_proba, save_path=os.path.join(output_dir, "roc_curve.png"))
     plot_confusion_matrix(y_test, y_pred, save_path=os.path.join(output_dir, "confusion_matrix.png"))
     

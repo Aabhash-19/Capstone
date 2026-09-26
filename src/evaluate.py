@@ -89,3 +89,89 @@ def print_paper_comparison_table(metrics: dict):
         repl_val = metrics.get(metric_name, 0.0)
         print(f"{metric_name:<25} | {paper_val:<12.2f} | {repl_val:<15.4f}")
     print("="*60 + "\n")
+
+def generate_benchmark_dataframe(results_dict: dict) -> pd.DataFrame:
+    """
+    Transforms dictionary of model evaluations into a standardized benchmark DataFrame.
+    """
+    rows = []
+    for model_name, m in results_dict.items():
+        rows.append({
+            "Model / Architecture": model_name,
+            "Accuracy": m["Accuracy"],
+            "Precision": m["Precision"],
+            "Recall": m["Recall"],
+            "F1 Score": m["F1 Score"],
+            "FNR": m["FNR"],
+            "AUC Score": m["AUC Score"]
+        })
+    df = pd.DataFrame(rows)
+    return df
+
+def plot_multi_model_roc(models_roc_dict: dict, save_path: str = "multi_model_roc.png"):
+    """
+    Plots combined ROC curves for all benchmarked model architectures.
+    Accepts models_roc_dict where keys are model names and values are (y_true, y_proba) tuples.
+    """
+    plt.figure(figsize=(9, 7))
+    palette = sns.color_palette("tab10", len(models_roc_dict))
+    
+    for (name, (y_true, y_proba)), color in zip(models_roc_dict.items(), palette):
+        fpr, tpr, _ = roc_curve(y_true, y_proba)
+        auc_val = roc_auc_score(y_true, y_proba)
+        plt.plot(fpr, tpr, lw=2, color=color, label=f"{name} (AUC = {auc_val:.3f})")
+        
+    plt.plot([0, 1], [0, 1], color='gray', lw=1.5, linestyle='--', label='No Skill (AUC = 0.50)')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate', fontsize=12)
+    plt.ylabel('True Positive Rate', fontsize=12)
+    plt.title('Multi-Model ROC Comparison (Literature-Guided Architectures)', fontsize=14, fontweight='bold')
+    plt.legend(loc='lower right', fontsize=8.5)
+    plt.grid(True, linestyle=':', alpha=0.6)
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300)
+    plt.close()
+    print(f"[Evaluation] Saved Multi-Model ROC plot to {save_path}")
+
+
+def plot_model_comparison_bars(results_df: pd.DataFrame, save_path: str = "model_comparison_bars.png"):
+    """Plots comparative bar chart across models for Accuracy, F1, and AUC."""
+    df_melted = pd.melt(
+        results_df,
+        id_vars=["Model / Architecture"],
+        value_vars=["Accuracy", "F1 Score", "AUC Score"],
+        var_name="Metric",
+        value_name="Score"
+    )
+    plt.figure(figsize=(12, 6))
+    ax = sns.barplot(
+        data=df_melted,
+        x="Model / Architecture",
+        y="Score",
+        hue="Metric",
+        palette=["#2b5c8f", "#d95f02", "#7570b3"]
+    )
+    plt.title("Comparative Performance Across Model Architectures", fontsize=14, fontweight="bold")
+    plt.ylabel("Score (0.0 to 1.0)", fontsize=12)
+    plt.xlabel("Architecture", fontsize=12)
+    plt.xticks(rotation=25, ha="right", fontsize=9)
+    plt.ylim(0.5, 1.05)
+    plt.legend(loc="lower right")
+    plt.grid(axis="y", linestyle=":", alpha=0.6)
+    
+    # Annotate bar values
+    for p in ax.patches:
+        height = p.get_height()
+        if not np.isnan(height) and height > 0:
+            ax.annotate(f"{height:.2f}",
+                        (p.get_x() + p.get_width() / 2., height),
+                        ha='center', va='bottom',
+                        fontsize=7.5, xytext=(0, 2),
+                        textcoords='offset points')
+            
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300)
+    plt.close()
+    print(f"[Evaluation] Saved Model Comparison Bars to {save_path}")
+

@@ -107,17 +107,32 @@ Phase 5 Leakage-Free Workflow (Robust):
 ### 3. Why Tree Ensembles Plateaued & Kernel Machines Triumphed
 Across Phases 1 through 4, decision-tree-based ensembles (AdaBoost, XGBoost) consistently plateaued between 83% and 85%:
 - **Orthogonal Decision Boundaries**: Decision trees split feature space along axis-aligned hyperplanes ($x_j \le \theta$). Acoustic dysphonia features interact through complex non-linear resonance relationships ($F_0 \times \text{shimmer} / \text{HNR}$).
-- **The Kernel Trick in Infinite-Dimensional Hilbert Space**: An RBF kernel projects the normalized 220-dimensional feature vector into an infinite-dimensional feature space $\mathcal{H}$:
-  $$K(\mathbf{x}_i, \mathbf{x}_j) = \exp\left(-\gamma \|\mathbf{x}_i - \mathbf{x}_j\|^2\right)$$
-  In this space, non-linear dysphonia clusters become linearly separable by a maximum-margin hyperplane:
-  $$\min_{\mathbf{w}, b, \boldsymbol{\xi}} \frac{1}{2}\|\mathbf{w}\|^2 + C \sum_{i=1}^n \xi_i \quad \text{subject to } y_i(\mathbf{w}^T \phi(\mathbf{x}_i) + b) \ge 1 - \xi_i, \; \xi_i \ge 0$$
+- **The Kernel Trick in Infinite-Dimensional Hilbert Space**: The Kernel Trick in Infinite-Dimensional Hilbert Space: An RBF kernel projects the normalized 220-dimensional feature vector into an infinite-dimensional feature space $\mathcal{H}$:
+
+$$
+K(\mathbf{x}_i, \mathbf{x}_j) = \exp\left(-\gamma \left\|\mathbf{x}_i - \mathbf{x}_j\right\|^2\right)
+$$
+
+In this space, non-linear dysphonia clusters become linearly separable by a maximum-margin hyperplane:
+
+$$
+\min_{\mathbf{w}, b, \boldsymbol{\xi}} \frac{1}{2}\|\mathbf{w}\|^2 + C \sum_{i=1}^{n} \xi_i
+\quad \text{subject to} \quad
+y_i\left(\mathbf{w}^T \phi(\mathbf{x}_i) + b\right) \geq 1 - \xi_i,\quad
+\xi_i \geq 0
+$$
 
 ### 4. Hyperparameter Sensitivity & Grid Search Optimization
 Over 200 model configurations were exhaustively benchmarked:
 
 1. **ANOVA Feature Dimension ($k \in [50, 400]$)**:
    - Evaluated using univariate one-way ANOVA F-value:
-     $$F = \frac{\text{MS}_{\text{between}}}{\text{MS}_{\text{within}}} = \frac{\sum_c n_c (\bar{x}_c - \bar{x})^2 / (C - 1)}{\sum_c \sum_i (x_{ci} - \bar{x}_c)^2 / (N - C)}$$
+
+$$
+F = \frac{\text{MS}_{\text{between}}}{\text{MS}_{\text{within}}}
+= \frac{\sum_c n_c(\bar{x}_c - \bar{x})^2 / (C - 1)}
+{\sum_c \sum_i (x_{ci} - \bar{x}_c)^2 / (N - C)}
+$$
    - $k < 150$: Underfitting; critical TQWT high-frequency wavelet sub-bands are omitted.
    - $k = 220$: **Optimal global peak** (retains top 29.2% of features; strips 534 noisy collinear attributes).
    - $k > 300$: Dimensionality curse; noise degrades kernel distance metrics $\|\mathbf{x}_i - \mathbf{x}_j\|$.

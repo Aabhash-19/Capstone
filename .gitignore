@@ -1,27 +1,74 @@
-# Git Ignore Rules for Parkinson's Disease ML Project
-
-# PDF documents and binary research papers
-*.pdf
-
-# Python Bytecode & Cache
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
 .pytest_cache/
 
-# Jupyter Notebook Checkpoints
+# Jupyter Notebook Checkpoints & Cache
 .ipynb_checkpoints/
+*-checkpoint.ipynb
 
-# Virtual Environments
-venv/
-.venv/
+# Environments
+.env
+.venv
 env/
+venv/
 ENV/
+env.bak/
+venv.bak/
 
-# OS / Editor temporary files
+# Operating System & Editor Artifacts
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 .vscode/
 .idea/
+*.sublime-project
+*.sublime-workspace
 
-# Large model artifacts and temporary logs (optional)
+# Research Papers, Logs & Temporary Scratch Files
+*.pdf
+scratch/
 *.log
+*.tmp
+*.temp

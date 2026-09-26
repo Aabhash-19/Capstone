@@ -15,6 +15,7 @@ from src.evaluate import (
     plot_multi_model_roc, plot_model_comparison_bars
 )
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
+from sklearn.preprocessing import StandardScaler
 
 DATASET_PATH = 'pd_speech_features.csv'
 MODEL_SAVE_PATH = 'parkinsons_stacked_ensemble.joblib'
@@ -165,12 +166,58 @@ def main():
     roc_probs["9. Feature Select + Stacking"] = (y_te_fs, p_fs)
 
     # =========================================================================
-    # TABULATE FULL BENCHMARK MATRIX
+    # PHASE 5: HYPERTUNED RBF-SVM WITH ANOVA FEATURE SELECTION (k=220)
+    # =========================================================================
+    print("\n" + "-"*75)
+    print("PHASE 5: Hypertuned RBF-SVM with ANOVA Feature Selection (k=220, C=5, γ=0.01)")
+    print("-"*75)
+    from sklearn.model_selection import StratifiedKFold, cross_validate
+    from sklearn.model_selection import train_test_split
+    from imblearn.over_sampling import SMOTE
+    from sklearn.feature_selection import SelectKBest, f_classif
+    from sklearn.svm import SVC
+    
+    # Preprocessing strictly leakage-free
+    X_tr_raw, X_te_raw, y_tr_raw, y_te_p5 = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
+    X_tr_sm, y_tr_p5 = SMOTE(random_state=42).fit_resample(X_tr_raw, y_tr_raw)
+    
+    sc_p5 = StandardScaler()
+    X_tr_sc = sc_p5.fit_transform(X_tr_sm)
+    X_te_sc = sc_p5.transform(X_te_raw)
+    
+    sel_p5 = SelectKBest(f_classif, k=220)
+    X_tr_p5 = sel_p5.fit_transform(X_tr_sc, y_tr_p5)
+    X_te_p5 = sel_p5.transform(X_te_sc)
+    
+    svm_p5 = SVC(C=5, gamma=0.01, kernel='rbf', probability=True, random_state=42)
+    svm_p5.fit(X_tr_p5, y_tr_p5)
+    
+    m_p5, _, p_p5_prob = evaluate_classifier(svm_p5, X_te_p5, y_te_p5, "10. Phase 5 Hypertuned RBF-SVM")
+    results["10. Phase 5: Hypertuned RBF-SVM (k=220)"] = m_p5
+    roc_probs["10. Phase 5 Hypertuned SVM"] = (y_te_p5, p_p5_prob)
+    
+    # 10-Fold Stratified Cross-Validation on balanced training space
+    cv_p5 = cross_validate(
+        SVC(C=5, gamma=0.01, kernel='rbf', probability=True, random_state=42),
+        X_tr_p5, y_tr_p5,
+        cv=StratifiedKFold(n_splits=10, shuffle=True, random_state=42),
+        scoring=['accuracy', 'precision', 'recall', 'f1', 'roc_auc']
+    )
+    print(f"\n[Phase 5 10-Fold CV] Accuracy:  {cv_p5['test_accuracy'].mean()*100:.2f}% ± {cv_p5['test_accuracy'].std()*100:.2f}%")
+    print(f"[Phase 5 10-Fold CV] Precision: {cv_p5['test_precision'].mean()*100:.2f}% ± {cv_p5['test_precision'].std()*100:.2f}%")
+    print(f"[Phase 5 10-Fold CV] Recall:    {cv_p5['test_recall'].mean()*100:.2f}% ± {cv_p5['test_recall'].std()*100:.2f}%")
+    print(f"[Phase 5 10-Fold CV] F1 Score:  {cv_p5['test_f1'].mean()*100:.2f}% ± {cv_p5['test_f1'].std()*100:.2f}%")
+    print(f"[Phase 5 10-Fold CV] AUC:       {cv_p5['test_roc_auc'].mean()*100:.2f}% ± {cv_p5['test_roc_auc'].std()*100:.2f}%")
+
+    # =========================================================================
+    # TABULATE FULL BENCHMARK MATRIX (ALL 10 ARCHITECTURES)
     # =========================================================================
     benchmark_df = generate_benchmark_dataframe(results)
     
     print("\n" + "=" * 85)
-    print("MASTER EXPERIMENTAL BENCHMARK MATRIX (ALL 9 ARCHITECTURES)")
+    print("MASTER EXPERIMENTAL BENCHMARK MATRIX (ALL 10 ARCHITECTURES)")
     print("=" * 85)
     print(benchmark_df.to_string(index=False))
     print("=" * 85 + "\n")
@@ -179,7 +226,7 @@ def main():
     plot_multi_model_roc(roc_probs, save_path="multi_model_roc.png")
     plot_model_comparison_bars(benchmark_df, save_path="model_comparison_bars.png")
 
-    # Save Best Model Pipeline
+    # Save Best Models
     save_pipeline = {
         'stacking_model': fs_stack,
         'scaler': sc_fs,
@@ -189,7 +236,25 @@ def main():
         'results_matrix': benchmark_df.to_dict(orient='records')
     }
     save_trained_pipeline(save_pipeline, MODEL_SAVE_PATH)
-    print("[Complete] All phases executed and verified successfully!")
+    
+    # Save Phase 5 Champion Model
+    phase5_pipeline = {
+        'model': svm_p5,
+        'scaler': sc_p5,
+        'selector': sel_p5,
+        'cv_results': {
+            'accuracy_mean': cv_p5['test_accuracy'].mean(),
+            'accuracy_std': cv_p5['test_accuracy'].std(),
+            'auc_mean': cv_p5['test_roc_auc'].mean(),
+            'precision_mean': cv_p5['test_precision'].mean(),
+            'recall_mean': cv_p5['test_recall'].mean(),
+            'f1_mean': cv_p5['test_f1'].mean(),
+        },
+        'test_results': m_p5,
+        'feature_names': list(X.columns)
+    }
+    save_trained_pipeline(phase5_pipeline, 'parkinsons_phase5_hyper_svm.joblib')
+    print("[Complete] All 10 phases executed and verified successfully!")
 
 if __name__ == "__main__":
     main()
